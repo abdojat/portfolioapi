@@ -238,6 +238,7 @@ function createProjectCard(project) {
             <div>Live: ${project.liveUrl || 'N/A'}</div>
             <div>Frontend: ${project.frontendUrl || 'N/A'}</div>
             <div>Backend: ${project.backendUrl || 'N/A'}</div>
+            <div>Mobile: ${project.mobileUrl || 'N/A'}</div>
         </div>
     `;
     return card;
@@ -251,6 +252,7 @@ function addProject() {
         liveUrl: prompt('Live URL:'),
         frontendUrl: prompt('Frontend URL:'),
         backendUrl: prompt('Backend URL:'),
+        mobileUrl: prompt('Mobile URL:'),
         image: prompt('Image URL:')
     };
     

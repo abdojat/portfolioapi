@@ -36,6 +36,10 @@ const projectSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  mobileUrl: {
+    type: String,
+    default: ''
+  },
   liveUrl: {
     type: String,
     default: ''
