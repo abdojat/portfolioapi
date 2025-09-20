@@ -25,317 +25,228 @@ npm install
 
 Copy the environment example file and configure it:
 
-```bash
-cp env.example .env
+# Portfolio Backend
+
+Professional, production-ready Node.js backend for a personal portfolio website with a lightweight admin panel.
+
+This repository provides:
+
+- A single-document portfolio data model (hero, about, projects, contact, footer)
+- Contact form handling with email notification support
+- Admin authentication (JWT + bcrypt)
+- File upload + Cloudinary support (optional)
+- RESTful API and an embedded admin panel served from /admin
+
+---
+
+## Table of contents
+
+- Features
+- Tech stack
+- Quick start
+- Configuration (.env)
+- Available scripts
+- API overview
+- Admin panel & data initialization
+- Security & production notes
+- Deployment recommendations
+- Contributing
+- License
+
+---
+
+## Features
+
+- Single document portfolio model with sections: hero, about, projects, contact, footer
+- Project CRUD, skills CRUD, contact management, file uploads, export/import and backups
+- Admin dashboard with basic statistics
+- Email notifications for incoming contact messages (configurable)
+- Optional Cloudinary uploads with local fallback
+
+## Tech stack
+
+- Node.js + Express
+- MongoDB (Mongoose)
+- JWT for authentication
+- Multer + multer-storage-cloudinary for uploads
+- Helmet, compression, cors, express-rate-limit for basic security and performance
+
+## Quick start
+
+Prerequisites
+
+- Node.js (>= 16 recommended)
+- npm or yarn
+- MongoDB (local) or MongoDB Atlas
+
+1) Install dependencies
+
+```powershell
+cd c:\Users\3bdojat\Desktop\portfolio\server
+npm install
 ```
 
-Edit `.env` with your configuration:
+2) Create a .env file
 
-```env
-# Server Configuration
-PORT=5000
-NODE_ENV=development
+Copy `env.example` to `.env` and fill in your values. In PowerShell:
 
-# MongoDB Configuration
-MONGODB_URI=mongodb://localhost:27017/portfolio
-
-# JWT Configuration
-JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
-JWT_EXPIRE=7d
-
-# Admin Credentials (change these!)
-ADMIN_EMAIL=admin@yourportfolio.com
-ADMIN_PASSWORD=admin123
-
-# Email Configuration (optional)
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USER=your-email@gmail.com
-EMAIL_PASS=your-app-password
-
-# Cloudinary Configuration (optional)
-CLOUDINARY_CLOUD_NAME=your-cloud-name
-CLOUDINARY_API_KEY=your-api-key
-CLOUDINARY_API_SECRET=your-api-secret
-
-# CORS Configuration
-CLIENT_URL=http://localhost:3000
+```powershell
+Copy-Item env.example .env
+# then edit .env with your editor of choice
 ```
 
-### 3. Database Setup
+Important environment variables are listed in the Configuration section below.
 
-Make sure MongoDB is running on your system, or use MongoDB Atlas:
+3) (Optional) Initialize the database
 
-```bash
-# Local MongoDB
-mongod
+This project includes an `init-db` script that creates a default admin (using `ADMIN_EMAIL` / `ADMIN_PASSWORD` from your `.env`) and seed portfolio data.
 
-# Or update MONGODB_URI in .env for MongoDB Atlas
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/portfolio
+```powershell
+npm run init-db
 ```
 
-### 4. Start the Server
+4) Start the server
 
-```bash
-# Development mode
+```powershell
+# development (nodemon)
 npm run dev
 
-# Production mode
+# production
 npm start
 ```
 
-The server will start on `http://localhost:5000`
+The API will be available at http://localhost:5000/api by default, and the admin panel at http://localhost:5000/admin.
 
-### 5. Access Admin Panel
+## Configuration (.env)
 
-Visit `http://localhost:5000/admin` to access the admin panel.
+Copy `env.example` and set these (high level):
 
-Default credentials:
-- Email: `admin@yourportfolio.com`
-- Password: `admin123`
+- PORT (default: 5000)
+- NODE_ENV (development|production)
+- MONGODB_URI (mongodb://localhost:27017/portfolio or MongoDB Atlas URI)
+- JWT_SECRET and JWT_EXPIRE
+- ADMIN_EMAIL and ADMIN_PASSWORD (used by `init-db` to create a first admin)
+- EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASS (optional — for contact form notifications)
+- CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET (optional)
+- CLIENT_URL (frontend URL for CORS)
 
-**Important**: Change these credentials in the `.env` file!
+Do NOT commit your `.env` to version control.
 
-## API Endpoints
+## Available scripts
 
-### Public Endpoints
+- `npm start` — start server with Node.js
+- `npm run dev` — start server with nodemon (development)
+- `npm run init-db` — initialize DB: create default admin and seed portfolio data
 
-#### Portfolio Data
-- `GET /api/portfolio` - Get all portfolio data
+These scripts are defined in `package.json`.
 
-#### Contact Form
-- `POST /api/contact` - Submit contact form
+## API overview
 
-### Protected Endpoints (Admin Only)
+Base URL: /api
 
-#### Authentication
-- `POST /api/auth/login` - Admin login
-- `GET /api/auth/me` - Get current admin info
-- `PUT /api/auth/profile` - Update admin profile
-- `PUT /api/auth/password` - Change password
+Health
+- GET /api/health — basic health check
 
-#### Portfolio Management
-- `PUT /api/portfolio` - Update entire portfolio
-- `PUT /api/portfolio/:section` - Update specific section (hero, about, contact)
-- `POST /api/portfolio/projects` - Add new project
-- `PUT /api/portfolio/projects/:id` - Update project
-- `DELETE /api/portfolio/projects/:id` - Delete project
+Public
+- GET /api/portfolio — fetch the full portfolio document
+- POST /api/contact — submit the contact form (validates name, email, message)
 
-#### Contact Management
-- `GET /api/contact` - Get all contact submissions
-- `GET /api/contact/:id` - Get specific contact submission
-- `PUT /api/contact/:id` - Update contact status
-- `DELETE /api/contact/:id` - Delete contact submission
-- `GET /api/contact/stats/overview` - Get contact statistics
+Authentication
+- POST /api/auth/login — authenticate admin, returns JWT
 
-#### Admin Panel
-- `GET /api/admin/dashboard` - Get dashboard statistics
-- `POST /api/admin/upload` - Upload image
-- `GET /api/admin/uploads` - Get uploaded files
-- `DELETE /api/admin/upload/:filename` - Delete uploaded file
-- `GET /api/admin/export` - Export portfolio data
-- `POST /api/admin/import` - Import portfolio data
-- `POST /api/admin/backup` - Create backup
+Protected (require Authorization: Bearer <token>)
 
-## Frontend Integration
+Auth
+- GET /api/auth/me — get current admin profile
+- PUT /api/auth/profile — update admin name/email
+- PUT /api/auth/password — change password
+- GET /api/auth/admins — (super-admin) list admins
+- POST /api/auth/admins — (super-admin) create admin
 
-### Update Your React Frontend
+Portfolio (public read, protected write)
+- PUT /api/portfolio — replace/update portfolio document
+- PUT /api/portfolio/:section — update a single section (e.g. hero, about)
+- POST /api/portfolio/projects — add a project
+- PUT /api/portfolio/projects/:id — update project
+- DELETE /api/portfolio/projects/:id — delete project
 
-1. **Install axios** (if not already installed):
-```bash
-cd client
-npm install axios
-```
+Contact (admin)
+- GET /api/contact — list contact submissions (pagination + filtering)
+- GET /api/contact/:id — get a single submission
+- PUT /api/contact/:id — update status (unread/read/replied)
+- DELETE /api/contact/:id — delete submission
+- GET /api/contact/stats/overview — contact statistics
 
-2. **Create API service** (`client/src/services/api.js`):
-```javascript
-import axios from 'axios';
+Admin utilities
+- GET /api/admin/dashboard — dashboard statistics
+- POST /api/admin/upload — upload image (multipart/form-data, field name: image)
+- GET /api/admin/uploads — list uploaded files (local uploads folder)
+- DELETE /api/admin/upload/:filename — delete local upload
+- GET /api/admin/export — export portfolio and contacts as JSON
+- POST /api/admin/import — import portfolio and contacts from JSON
+- POST /api/admin/backup — create a local backup file under `backups/`
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+Upload routes (Cloudinary middleware)
+- POST /api/upload/image — another endpoint that uses Cloudinary parser (see `routes/uploadRoutes.js`)
 
-const api = axios.create({
-  baseURL: API_BASE,
-});
+Static
+- Admin panel: GET /admin (served from `admin/` folder)
+- Uploads: served from /uploads
 
-export const getPortfolioData = async () => {
-  const response = await api.get('/portfolio');
-  return response.data.data;
-};
+## Admin panel & data initialization
 
-export const submitContact = async (contactData) => {
-  const response = await api.post('/contact', contactData);
-  return response.data;
-};
+- Admin panel is a static SPA located in `admin/` and served at `/admin`.
+- The `init-db` script creates a default admin using the `ADMIN_EMAIL` and `ADMIN_PASSWORD` values from your `.env` if no admin exists. Make sure to set strong credentials before running in production.
 
-export default api;
-```
+## Security & production notes
 
-3. **Update your components** to use the API:
+- Authentication: JWT tokens signed with `JWT_SECRET`. Keep it secret and long.
+- Passwords are hashed with bcrypt.
+- Helmet and compression are enabled.
+- Basic rate limiting is included (configurable in `server.js`).
+- Consider additional hardening for production: HTTPS, stricter CORS, centralized logging, process manager (PM2), and automatic backups.
 
-```javascript
-// In your App.tsx or main component
-import { useEffect, useState } from 'react';
-import { getPortfolioData } from './services/api';
+## Deployment recommendations
 
-function App() {
-  const [portfolioData, setPortfolioData] = useState(null);
-  const [loading, setLoading] = useState(true);
+- Use MongoDB Atlas for production DB and set `MONGODB_URI` accordingly.
+- Use Cloudinary for file storage by setting Cloudinary env variables — otherwise uploads are stored in the local `uploads/` folder.
+- Recommended hosting: Railway, Render, Heroku, or DigitalOcean App Platform for the backend; Vercel or Netlify for frontend.
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const data = await getPortfolioData();
-        setPortfolioData(data);
-      } catch (error) {
-        console.error('Failed to load portfolio data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+Example environment variables for production (keep them secret):
 
-    loadData();
-  }, []);
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <Hero data={portfolioData?.hero} />
-      <About data={portfolioData?.about} />
-      <Projects data={portfolioData?.projects} />
-      <Contact data={portfolioData?.contact} />
-      <Footer />
-    </div>
-  );
-}
-```
-
-4. **Update Contact component** to use the API:
-```javascript
-import { submitContact } from '../services/api';
-
-const Contact = ({ data }) => {
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await submitContact(formData);
-      toast({
-        title: "Message sent!",
-        description: "Thank you for your message. I'll get back to you soon.",
-      });
-      setFormData({ name: '', email: '', message: '' });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to send message. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  // ... rest of component
-};
-```
-
-## Admin Panel Features
-
-### Dashboard
-- Overview statistics
-- Recent contact messages
-- Quick access to all sections
-
-### Content Management
-- **Hero Section**: Update title, subtitle, description, and social links
-- **About Section**: Update personal info, description, and profile image
-- **Projects**: Add, edit, and delete projects with full details
-- **Contact**: Update contact information and description
-
-### Contact Management
-- View all contact form submissions
-- Mark messages as read/replied
-- Delete messages
-- Contact statistics
-
-### File Management
-- Upload images for projects
-- View uploaded files
-- Delete files
-- Cloudinary integration (optional)
-
-### Data Management
-- Export portfolio data as JSON
-- Import portfolio data
-- Create backups
-- Restore from backups
-
-## Security Features
-
-- JWT authentication for admin access
-- Password hashing with bcrypt
-- Rate limiting on API endpoints
-- Input validation and sanitization
-- CORS configuration
-- Helmet.js for security headers
-
-## Deployment
-
-### Environment Variables for Production
-
-```env
+```text
 NODE_ENV=production
 PORT=5000
 MONGODB_URI=your-production-mongodb-uri
 JWT_SECRET=your-production-jwt-secret
-CLIENT_URL=https://yourdomain.com
+CLIENT_URL=https://your-frontend-domain.example
 ```
-
-### Recommended Hosting
-
-- **Backend**: Heroku, Railway, or DigitalOcean
-- **Database**: MongoDB Atlas
-- **File Storage**: Cloudinary or AWS S3
-- **Frontend**: Vercel, Netlify, or GitHub Pages
 
 ## Troubleshooting
 
-### Common Issues
+- MongoDB connection errors: check that `MONGODB_URI` is correct and the DB is reachable.
+- Email not sent: verify SMTP creds and that less-secure access / app password is configured for providers like Gmail.
+- Upload errors: check `CLOUDINARY_*` vars or file size/type limits (5MB by default).
 
-1. **MongoDB Connection Error**
-   - Check if MongoDB is running
-   - Verify connection string in `.env`
-   - Ensure network access for MongoDB Atlas
+Check logs (development):
 
-2. **CORS Errors**
-   - Update `CLIENT_URL` in `.env`
-   - Check if frontend URL matches
-
-3. **Admin Login Issues**
-   - Verify admin credentials in `.env`
-   - Check if admin account exists in database
-
-4. **File Upload Issues**
-   - Ensure uploads directory exists
-   - Check file size limits
-   - Verify Cloudinary credentials (if using)
-
-### Logs
-
-Check server logs for detailed error information:
-```bash
+```powershell
 npm run dev
 ```
 
-## Support
+## Contributing
 
-For issues or questions:
-1. Check the troubleshooting section
-2. Review server logs
-3. Verify environment configuration
-4. Test API endpoints with Postman or similar tool
+Contributions are welcome. Please file issues or pull requests. Keep changes focused and include tests when possible.
+
+Suggested workflow:
+
+```powershell
+git checkout -b feat/describe-change
+git add .
+git commit -m "feat: brief description"
+git push origin feat/describe-change
+```
 
 ## License
 
-MIT License - feel free to use this for your own portfolio! 
+This project is released under the MIT License.
